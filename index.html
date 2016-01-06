@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+    <script type="text/JavaScript" src="js/jsDraw2D.js"></script>
+</head>
+<body>
+<table>
+    <tbody><tr>
+        <td valign="top">
+            <div id="canvas" style="overflow:hidden;position:relative;width:600px;height:370px;border:#999999 1px solid;"><div style="left: 0px; top: 0px; width: 599px; height: 369px; z-index: 0; position: absolute;display: none;"></div></div>
+            <p>Time required to draw:<b><span id="timems"></span></b>&nbsp;milliseconds</p>
+        </td><td valign="top" style="padding-left:10px">
+        <p>
+        </p><table>
+        <tbody><tr><td><b>Pen Width:</b></td><td><input id="penwidth" type="text" value="1" size="20"></td></tr>
+        <tr><td><b>Color:</b></td><td><input id="color" type="text" value="#0000ff" size="20" "=""></td></tr>
+        <tr><td><b>Tension:</b></td><td><input id="tension" type="text" value="0" size="20" onblur="CheckTension();"></td></tr>
+        </tbody></table>
+        <p></p>
+        <br>
+        <input style="font-weight:bold" type="button" value="Draw Curve" onclick="drawCurve();">
+        <br><br>
+        <input style="font-weight:bold" type="button" value="Draw Closed Curve" onclick="drawClosedCurve();">
+        <br><br>
+        <input style="font-weight:bold" type="button" value="Draw Bezier (Cubic/Poly)" onclick="drawPolyBezier();">
+        <br><br>
+        <input style="font-weight:bold" type="button" value="Fill Closed Curve" onclick="fillClosedCurve();">
+        <br><br>
+        <input style="font-weight:bold" type="button" value="Clear Canvas" onclick="clearCanvas();">
+        <br><br>
+        <input style="font-weight:bold" type="button" value="Clear Previous Points Set" onclick="clearPreviousPoints();">
+        <br><br>
+        <p><b>Points Data (for bug reporting):</b></p><br>
+        <textarea style="height:50px;width:250px" id="txt" rows="1" cols="20"></textarea><br>
+    </td><td>
+    </td>
+    </tr>
+    </tbody></table>
+<script type="text/JavaScript">
+    var canvasDiv = document.getElementById("canvas");
+    var gr = new jsGraphics(canvasDiv);
+    var penWidth;
+    var col;
+    var pen;
+    var d1, d2;
+    var msdiv = document.getElementById("timems");
+    setPenColor(true);
+    var points = new Array();
+    var ie = false;
+    if (document.all)
+        ie = true;
+    if (!ie) {
+        //canvasDiv.captureEvents(Event.MOUSEMOVE);
+        //canvasDiv.captureEvents(Event.CLICK);
+    }
+    canvasDiv.onmousemove = getMouseXY;
+    canvasDiv.onclick = drawPoint;
+
+    var mouseX = 0;
+    var mouseY = 0;
+    //Get mouse position
+    function getMouseXY(e) {
+        if (ie) {
+            mouseX = event.clientX + document.body.parentElement.scrollLeft;
+            mouseY = event.clientY + document.body.parentElement.scrollTop;
+        } else {
+            mouseX = e.pageX;
+            mouseY = e.pageY;
+        }
+
+        if (mouseX < 0) {
+            mouseX = 0
+        }
+        if (mouseY < 0) {
+            mouseY = 0
+        }
+
+        mouseX = mouseX - canvasDiv.offsetLeft;
+        mouseY = mouseY - canvasDiv.offsetTop;
+
+        return true;
+    }
+
+    function setPenColor(noAlert) {
+        if (document.getElementById("color").value != "")
+            col = new jsColor(document.getElementById("color").value);
+        else
+            col = new jsColor("blue");
+
+        if (document.getElementById("penwidth").value != "")
+            penWidth = document.getElementById("penwidth").value;
+
+        if (!isNaN(penWidth))
+            pen = new jsPen(col, penWidth);
+        else
+            pen = new jsPen(col, 1);
+
+        if (!noAlert) {
+            if (points.length == 0) {
+                alert("Please click at any location on the blank canvas at left side to plot the points!");
+                return false;
+            } else if (points.length == 1) {
+                alert("2 or more points are required to draw any curve! Please plot more points by clicking at any location on the blank canvas at left side.");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function drawPoint() {
+        gr.fillRectangle(new jsColor("green"), new jsPoint(mouseX - 6, mouseY - 6), 6, 6);
+        points[points.length] = new jsPoint(mouseX - 3, mouseY - 3);
+    }
+
+    function drawCurve() {
+        if (!setPenColor())
+            return;
+        var ten = document.getElementById("tension").value;
+        d1 = (new Date()).getTime();
+        gr.drawCurve(pen, points, ten);
+        d2 = (new Date()).getTime();
+        msdiv.innerHTML = (d2 - d1);
+        showPoints();
+        //points=new Array();
+    }
+
+    function drawClosedCurve() {
+        if (!setPenColor())
+            return;
+        var ten = document.getElementById("tension").value;
+        d1 = (new Date()).getTime();
+        gr.drawClosedCurve(pen, points, ten);
+        d2 = (new Date()).getTime();
+        msdiv.innerHTML = (d2 - d1);
+        showPoints();
+        //points=new Array();
+    }
+
+    function drawPolyBezier() {
+        if (!setPenColor())
+            return;
+
+        if (points.length == 4) {
+            d1 = (new Date()).getTime();
+            gr.drawBezier(pen, points);
+        } else {
+            d1 = (new Date()).getTime();
+            gr.drawPolyBezier(pen, points);
+        }
+        d2 = (new Date()).getTime();
+        msdiv.innerHTML = (d2 - d1);
+        showPoints();
+        //points=new Array();
+    }
+
+    function fillClosedCurve() {
+        if (!setPenColor())
+            return;
+        var ten = document.getElementById("tension").value;
+        d1 = (new Date()).getTime();
+        gr.fillClosedCurve(col, points, ten);
+        d2 = (new Date()).getTime();
+        msdiv.innerHTML = (d2 - d1);
+        showPoints();
+        //points=new Array();
+    }
+
+    function clearCanvas() {
+        gr.clear();
+        points = new Array();
+    }
+
+    function clearPreviousPoints() {
+        points = new Array();
+    }
+
+    function CheckTension() {
+        var ten = document.getElementById("tension").value;
+        if (!isNaN(ten)) {
+            if (ten > 10)
+                document.getElementById("tension").value = 10;
+            else if (ten < -10)
+                document.getElementById("tension").value = -10;
+        }
+    }
+
+    function showPoints() {
+        var txt = document.getElementById("txt");
+        txt.innerHTML = "";
+        for (var i = 0; i < points.length; i++) {
+            txt.innerHTML = txt.innerHTML + "new jsPoint(" + points[i].x + "," + points[i].y + "),";
+        }
+    }
+
+</script>
+
+
+</body>
+</html>
